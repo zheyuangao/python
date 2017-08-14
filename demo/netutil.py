@@ -36,6 +36,43 @@ def get_movie_detail(path):
         back += i
     return back
 
+def get_movie_name_mobile(key ,value):
+    print('=======================' + value)
+    value = request.quote(value)
+    path = 'https://m.douban.com/search/?query=' + value
+    req = request.Request(path, None, header)
+    r = request.urlopen(req)
+    data = r.read().decode('utf-8')
+    # print(data)
+    soup = BeautifulSoup(data, 'html.parser')
+    try:
+        title_full = soup.find('div','subject-info').find('span').get_text()
+    except:
+        print('!!!!!!!!!! can not request ' + request.unquote(value, 'utf-8', 'replace') + 'skip')
+        return None
+    url=''
+    for aList in soup.find_all('a'):
+        if '/movie/subject' in aList.get('href'):
+            url=aList.get('href')
+            break
+    if url is None:
+        print('get url faild')
+        return None
+    time.sleep(0.3)
+    category_back = get_movie_detail('https://m.douban.com'+url)
+    score = soup.find('div','subject-info').find('p','rating').get_text().strip()
+    title_final = title_full + '_' + score + '_' + category_back
+    if request.unquote(value, 'utf-8', 'replace') != title_full:
+        print(
+            'callback title not same input: ' + request.unquote(value, 'utf-8', 'replace') + ",callback:" + title_full)
+        print('callback :' + title_final)
+        return None
+    else:
+        head = re.compile('.*\\\\').findall(key)
+        foot = re.compile('\.\w+').findall(key)
+        file_name = head[0] + title_final + foot[foot.__len__() - 1]
+        return file_name
+
 def get_movie_name(key ,value):
     print('=======================' + value)
     value = request.quote(value)
@@ -51,7 +88,6 @@ def get_movie_name(key ,value):
         print('!!!!!!!!!! can not request ' + request.unquote(value, 'utf-8', 'replace') + 'skip')
         return None
     url = soup.find("div", "pl2").a.get('href')
-    time.sleep(1)
     category_back = get_movie_detail(url)
     if '/' in title_full:
         title_real = title_full.split('/')[0]
